@@ -5,6 +5,7 @@ const partialUpdate = require('../helpers/partialUpdate');
 /** Collection of related methods for companies. */
 
 class Company {
+
   constructor({ handle, name, num_employees, description, logo_url }) {
     this.handle = handle;
     this.name = name;
@@ -19,28 +20,28 @@ class Company {
   static async getAll({ search, min_employees, max_employees }) {
     let filters = [];
     let values = [];
-    const query = `SELECT handle, name, num_employees, description, logo_url 
+    let query = `SELECT handle, name, num_employees, description, logo_url 
       FROM companies`;
 
-    if (min_employees > max_employees) {
+    if (+(min_employees) > +(max_employees)) {
       throw new ExpressError('Invalid min-max query', 400);
     }
 
     if (search) {
-      filters.push(`name LIKE %${filters.length + 1}%`);
+      filters.push(`name LIKE $${filters.length + 1}`);
       values.push(`%${search}%`);
     }
     if (min_employees) {
-      filters.push(`num_employees>${filters.length + 1}`);
+      filters.push(`num_employees > $${filters.length + 1}`);
       values.push(min_employees);
     }
     if (max_employees) {
-      filters.push(`num_employees<${filters.length + 1}`);
+      filters.push(`num_employees < $${filters.length + 1}`);
       values.push(max_employees);
     }
 
     if (filters.length > 0) {
-      query += 'WHERE ' + filters.join(' AND ');
+      query += ' WHERE ' + filters.join(' AND ');
     }
 
     const result = await db.query(`${query};`, values);
@@ -83,13 +84,27 @@ class Company {
   static async update(handle, items) {
     const { query, values } = partialUpdate("companies", items, "handle", handle);
     const result = await db.query(query, values);
+
     if (result.rows.length === 0) {
       throw new ExpressError(`Failed to update company '${handle}'`, 404);
     }
     return new Company(result.rows[0]);
   }
 
-  static async delete() { }
+  static async delete(handle) {
+    const result = await db.query(
+      `DELETE FROM companies 
+      WHERE handle=$1 
+      RETURNING handle`,
+      [handle]
+    );
+
+    if (result.rows.length === 0) {
+      throw new ExpressError(`Failed to delete company '${handle}'.`, 404);
+    }
+
+    return { message: "Company deleted" }
+  }
 }
 
 module.exports = Company;
