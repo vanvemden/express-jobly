@@ -2,6 +2,7 @@ const express = require('express');
 const router = new express.Router();
 const jsonschema = require("jsonschema");
 const Company = require("../models/company");
+const ExpressError = require("../helpers/expressError");
 const companySchema = require("../schemas/companySchema.json");
 
 // GET '/companies/?search=..&min_employees=..&max_employees=..'

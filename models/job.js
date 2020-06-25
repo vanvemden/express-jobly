@@ -5,6 +5,7 @@ const partialUpdate = require('../helpers/partialUpdate');
 /** Collection of related methods for jobs. */
 
 class Job {
+
   constructor({ id, title, salary, equity, company_handle, date_posted }) {
     this.id = id;
     this.title = title;
@@ -58,9 +59,13 @@ class Job {
       query += ' WHERE ' + filters.join(' AND ');
     }
 
-    const result = await db.query(`${query};`, values);
+    try {
+      const result = await db.query(`${query};`, values);
+      return result.rows.map((j) => new Job(j));
+    } catch {
+      throw new ExpressError('Invalid search data.', 404);
+    }
 
-    return result.rows.map((j) => new Job(j));
   }
 
   static async getById(id) {

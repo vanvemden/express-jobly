@@ -1,6 +1,7 @@
 const db = require('../db');
 const ExpressError = require('../helpers/expressError');
 const partialUpdate = require('../helpers/partialUpdate');
+const Job = require('./job');
 
 /** Collection of related methods for companies. */
 
@@ -44,25 +45,38 @@ class Company {
       query += ' WHERE ' + filters.join(' AND ');
     }
 
-    const result = await db.query(`${query};`, values);
+    try {
+      const result = await db.query(`${query};`, values);
+      return result.rows.map((c) => new Company(c));
+    } catch {
+      throw new ExpressError('Invalid search data.', 404);
+    }
 
-    return result.rows.map((c) => new Company(c));
   }
 
 
   static async getById(handle) {
-    const result = await db.query(
+    const resultCompany = await db.query(
       `SELECT handle, name, num_employees, description, logo_url
-        FROM companies
-        WHERE handle=$1`,
+        FROM companies 
+        WHERE handle=$1;`,
       [handle]
     );
 
-    if (result.rows.length === 0) {
+    const resultJobs = await db.query(
+      `SELECT id, title, salary, equity, date_posted
+      FROM jobs
+      WHERE company_handle=$1;`,
+      [handle]
+    );
+
+    if (resultCompany.rows.length === 0) {
       throw new ExpressError(`Company with handle '${handle}' does not exist.`, 404);
     }
 
-    return new Company(result.rows[0]);
+    let company = new Company(resultCompany.rows[0]);
+    company.jobs = resultJobs.rows.map((j) => new Job(j));
+    return company;
   }
 
   // Create a new company .
@@ -80,18 +94,25 @@ class Company {
       return new Company(result.rows[0]);
 
     } catch {
-      throw new ExpressError(`Company with handle '${handle}' does already exist.`, 404);
+      throw new ExpressError(`Company with handle '${handle}' does already exist.`, 400);
     }
   }
 
   static async update(handle, items) {
-    const { query, values } = partialUpdate("companies", items, "handle", handle);
-    const result = await db.query(query, values);
+    try {
+      const { query, values } = partialUpdate("companies", items, "handle", handle);
+      const result = await db.query(query, values);
 
-    if (result.rows.length === 0) {
-      throw new ExpressError(`Failed to update company '${handle}'`, 404);
+      if (result.rows.length === 0) {
+        throw new ExpressError(`Failed to update company '${handle}'`, 400);
+      }
+
+      return new Company(result.rows[0]);
+
+    } catch {
+      throw new ExpressError(`Invalid data for update.`, 400);
     }
-    return new Company(result.rows[0]);
+
   }
 
   static async delete(handle) {

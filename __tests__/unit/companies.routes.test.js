@@ -13,7 +13,7 @@ beforeEach(async () => {
   );
 });
 
-describe('Test companies routes', () => {
+describe('Test GET companies routes', () => {
 
   test('GET / - list of all companies.', async () => {
     const response = await request(app).get('/companies');
@@ -50,6 +50,10 @@ describe('Test companies routes', () => {
     expect(response.body.companies).toHaveLength(2);
   });
 
+});
+
+describe('Test POST routes for companies', () => {
+
   test('POST / - add a new company.', async () => {
     const responsePost = await request(app).post('/companies').send({
       handle: 'tesla',
@@ -66,6 +70,24 @@ describe('Test companies routes', () => {
     expect(responseGet.statusCode).toBe(200);
     expect(responseGet.body.company.handle).toBe('tesla');
   });
+
+  test('POST / - add a new company with invalid data', async () => {
+    const response = await request(app).post('/companies').send({
+      handle: '',
+      name: 'Tesla',
+      num_employees: 'thousand',
+      description: 'Creator of cool cars',
+      logo_url: 'http://tesla.img/',
+      _token: 'wheeeeeee'
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message.length).toBeGreaterThan(0);
+  });
+
+});
+
+describe('Test PATCH routes for companies', () => {
 
   test('PATCH /:handle - update a company.', async () => {
     const responsePatch = await request(app).patch('/companies/appleinc').send({
@@ -84,6 +106,24 @@ describe('Test companies routes', () => {
     expect(responseGet.body.company.num_employees).toBe(1500);
   });
 
+  test('PATCH /:handle - update a company with invalid data', async () => {
+    const response = await request(app).patch('/companies/appleinc').send({
+      handle: 'ibm',
+      name: 'Apple Inc.',
+      num_employees: 1500,
+      description: 'Creator of iPhone',
+      logo_url: 'http://apple.img/',
+      _token: 'wheeeeeee'
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBeDefined();
+  });
+
+});
+
+describe('Test DELETE routes for companies', () => {
+
   test('Delete /:handle - delete a company.', async () => {
     const responseDelete = await request(app).delete('/companies/appleinc');
     expect(responseDelete.statusCode).toBe(200);
@@ -91,5 +131,6 @@ describe('Test companies routes', () => {
 
     const responseGet = await request(app).get('/companies/appleinc');
     expect(responseGet.statusCode).toBe(404);
-  })
+  });
+
 });
