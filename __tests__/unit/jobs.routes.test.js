@@ -25,6 +25,10 @@ beforeEach(async () => {
   );
 });
 
+afterAll(async () => {
+  await db.end()
+});
+
 describe('Testing GET requests', () => {
   test('Should GET a list of ALL jobs', async () => {
     const response = await request(app).get('/jobs');
@@ -85,9 +89,10 @@ describe('Testing GET requests', () => {
       salary: 150000,
       equity: 0.1,
       company_handle: 'appleinc',
-      date_posted: expect.anything(),
+      date_posted: expect.any(String),
     });
   });
+
 });
 
 describe('Testing POST requests', () => {
@@ -120,6 +125,8 @@ describe('Testing POST requests', () => {
     expect(result.statusCode).toBe(400);
     expect(result.body.message.length).toBeGreaterThan(0);
   });
+
+  // Add testing: Make sure the company handle is valid
 
 });
 
@@ -169,4 +176,5 @@ describe("Testing DELETE request", () => {
 
     expect(resultGet.statusCode).toBe(404);
   });
+
 });

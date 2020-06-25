@@ -13,6 +13,10 @@ beforeEach(async () => {
   );
 });
 
+afterAll(async () => {
+  await db.end()
+});
+
 describe('Test GET companies routes', () => {
 
   test('GET / - list of all companies.', async () => {
