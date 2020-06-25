@@ -49,6 +49,7 @@ class Company {
     return result.rows.map((c) => new Company(c));
   }
 
+
   static async getById(handle) {
     const result = await db.query(
       `SELECT handle, name, num_employees, description, logo_url
@@ -64,6 +65,8 @@ class Company {
     return new Company(result.rows[0]);
   }
 
+  // Create a new company .
+  // Returns company instance object
   static async create({ handle, name, num_employees, description, logo_url }) {
     try {
 
