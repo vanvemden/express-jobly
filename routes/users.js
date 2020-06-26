@@ -4,6 +4,7 @@ const jsonschema = require("jsonschema");
 const User = require("../models/user");
 const userSchema = require("../schemas/userSchema.json");
 const ExpressError = require('../helpers/expressError');
+const { ensureSameUser } = require('../middleware/auth');
 
 
 // POST '/users'
@@ -16,8 +17,8 @@ router.post('/', async (req, res, next) => {
       let listOfErrors = result.errors.map(err => err.stack);
       throw new ExpressError(listOfErrors, 400);
     }
-    const user = await User.register(req.body);
-    return res.status(201).json({ user });
+    const token = await User.register(req.body);
+    return res.status(201).json({ token });
   } catch (err) {
     next(err);
   }
@@ -50,7 +51,7 @@ router.get('/:username', async (req, res, next) => {
 
 // PATCH '/users/[username]'
 // Returns { user : userData }
-router.patch('/:username', async (req, res, next) => {
+router.patch('/:username', ensureSameUser, async (req, res, next) => {
   try {
     // update existing user by username
     const result = jsonschema.validate(req.body, userSchema);
@@ -67,7 +68,7 @@ router.patch('/:username', async (req, res, next) => {
 
 // DELETE '/users/[username]'
 // Returns { message: "user deleted" }
-router.delete('/:username', async (req, res, next) => {
+router.delete('/:username', ensureSameUser, async (req, res, next) => {
   try {
     // delete an existing user listing by id.
     const message = await User.delete(req.params.username);

@@ -1,8 +1,30 @@
 const request = require('supertest');
 const app = require('../../app');
 const db = require('../../db');
+const User = require('../../models/user');
 
 
+// Global token for admin authentication
+let _token;
+
+beforeAll(async () => {
+  await db.query('DELETE FROM users');
+  await User.register({
+    username: "admin",
+    password: "secret",
+    first_name: "admin_first",
+    last_name: "admin_last",
+    email: "admin@example.com",
+    photo_url: "2424234.jpg"
+  });
+  await db.query(
+    `UPDATE users 
+    SET is_admin = true 
+    WHERE username='admin'`
+  );
+  _token = await User.authenticate({ username: "admin", password: "secret" });
+  console.log('token.........................', _token);
+});
 
 beforeEach(async () => {
   await db.query('DELETE FROM companies;');
@@ -31,21 +53,21 @@ afterAll(async () => {
 
 describe('Testing GET requests', () => {
   test('Should GET a list of ALL jobs', async () => {
-    const response = await request(app).get('/jobs');
+    const response = await request(app).get('/jobs').send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.jobs).toHaveLength(3);
   });
 
   test('Should GET a list of jobs matching SEARCH params of Manager', async () => {
-    const response = await request(app).get('/jobs?search=Manager');
+    const response = await request(app).get('/jobs?search=Manager').send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.jobs).toHaveLength(2);
   });
 
   test('Should GET a list of jobs with minimum salary of 130000', async () => {
-    const response = await request(app).get('/jobs?min_salary=130000');
+    const response = await request(app).get('/jobs?min_salary=130000').send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.jobs).toHaveLength(1);
@@ -53,7 +75,7 @@ describe('Testing GET requests', () => {
   });
 
   test('Should GET a list of jobs with minimum equity of 0.01', async () => {
-    const response = await request(app).get('/jobs?min_equity=0.01');
+    const response = await request(app).get('/jobs?min_equity=0.01').send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.jobs).toHaveLength(1);
@@ -63,7 +85,7 @@ describe('Testing GET requests', () => {
   test('Should GET a list of jobs with min. salary, min. equity, and search constraints', async () => {
     const response = await request(app).get(
       '/jobs?search=Engineer&min_salary=130000&min_equity=0.01'
-    );
+    ).send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.jobs).toHaveLength(1);
@@ -73,14 +95,14 @@ describe('Testing GET requests', () => {
   test('GET request with invalid data for min. equity and min. salary', async () => {
     const response = await request(app).get(
       '/jobs?min_salary=hundredthousand&min_equity=hello'
-    );
+    ).send({ _token });
 
     expect(response.statusCode).toBe(404);
     expect(response.body.message).toBe("Invalid search data.");
   });
 
   test('GET request to /jobs/[id], return a job', async () => {
-    const response = await request(app).get('/jobs/1');
+    const response = await request(app).get('/jobs/1').send({ _token });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.job).toEqual({
@@ -102,14 +124,15 @@ describe('Testing POST requests', () => {
       title: 'Testing Manager',
       salary: 170000,
       equity: 0.01,
-      company_handle: 'ibm'
+      company_handle: 'ibm',
+      _token: _token
     });
 
     expect(resultPost.statusCode).toBe(201);
     expect(resultPost.body.job.title).toBe('Testing Manager');
     expect(resultPost.body.job.id).toBe(4);
 
-    const resultGet = await request(app).get('/jobs/4');
+    const resultGet = await request(app).get('/jobs/4').send({ _token });
     expect(resultGet.statusCode).toBe(200);
     expect(resultGet.body.job.title).toBe('Testing Manager');
   });
@@ -119,7 +142,8 @@ describe('Testing POST requests', () => {
       title: '',
       salary: 'alot',
       equity: 2,
-      company_handle: 'ibm'
+      company_handle: 'ibm',
+      _token: _token
     });
 
     expect(result.statusCode).toBe(400);
@@ -137,14 +161,15 @@ describe("Testing PATCH request", () => {
       title: 'Database Manager',
       salary: 155000,
       equity: 0.015,
-      company_handle: 'ibm'
+      company_handle: 'ibm',
+      _token: _token
     });
 
     expect(resultPatch.statusCode).toBe(200);
     expect(resultPatch.body.job.salary).toBe(155000);
     expect(resultPatch.body.job.equity).toBe(0.015);
 
-    const resultGet = await request(app).get('/jobs/2');
+    const resultGet = await request(app).get('/jobs/2').send({ _token });
     expect(resultGet.statusCode).toBe(200);
     expect(resultGet.body.job.salary).toBe(155000);
     expect(resultGet.body.job.equity).toBe(0.015);
@@ -155,7 +180,8 @@ describe("Testing PATCH request", () => {
       title: 'Database Manager',
       salary: 'araise',
       equity: 0.015,
-      company_handle: 'ibm'
+      company_handle: 'ibm',
+      _token: _token
     })
 
     expect(result.statusCode).toBe(400);
@@ -167,12 +193,12 @@ describe("Testing PATCH request", () => {
 describe("Testing DELETE request", () => {
 
   test('DELETE request to existing job', async () => {
-    const resultDelete = await request(app).delete('/jobs/2');
+    const resultDelete = await request(app).delete('/jobs/2').send({ _token });
 
     expect(resultDelete.statusCode).toBe(200);
     expect(resultDelete.body.message).toBe('Job deleted');
 
-    const resultGet = await request(app).get('/jobs/2');
+    const resultGet = await request(app).get('/jobs/2').send({ _token });
 
     expect(resultGet.statusCode).toBe(404);
   });

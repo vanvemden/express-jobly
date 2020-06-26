@@ -4,11 +4,12 @@ const jsonschema = require("jsonschema");
 const Job = require("../models/job");
 const jobSchema = require("../schemas/jobSchema.json");
 const ExpressError = require('../helpers/expressError');
+const { ensureIsAdmin } = require("../middleware/auth");
 
 
 // POST '/jobs'
 // Returns { job: jobData }
-router.post('/', async (req, res, next) => {
+router.post('/', ensureIsAdmin, async (req, res, next) => {
   try {
     // create a new job
     const result = jsonschema.validate(req.body, jobSchema);
@@ -50,7 +51,7 @@ router.get('/:id', async (req, res, next) => {
 
 // PATCH '/jobs/[id]'
 // Returns { job : jobData }
-router.patch('/:id', async (req, res, next) => {
+router.patch('/:id', ensureIsAdmin, async (req, res, next) => {
   try {
     // update existing job by id
     const result = jsonschema.validate(req.body, jobSchema);
@@ -67,7 +68,7 @@ router.patch('/:id', async (req, res, next) => {
 
 // DELETE '/jobs/[id]'
 // Returns { message: "Job deleted" }
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', ensureIsAdmin, async (req, res, next) => {
   try {
     // delete an existing job listing by id.
     const message = await Job.delete(req.params.id);

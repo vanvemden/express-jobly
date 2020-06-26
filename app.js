@@ -16,10 +16,17 @@ app.use(morgan("tiny"));
 const companiesRoutes = require("./routes/companies");
 const jobsRoutes = require("./routes/jobs");
 const usersRoutes = require("./routes/users");
+const authRoutes = require("./routes/auth");
+const { authenticateJWT, ensureLoggedIn } = require("./middleware/auth");
 
-app.use("/companies", companiesRoutes);
-app.use("/jobs", jobsRoutes);
+// add middleware for all routes
+app.use(authenticateJWT);
+
+// routes
+app.use("/", authRoutes);
 app.use("/users", usersRoutes);
+app.use("/companies", ensureLoggedIn, companiesRoutes);
+app.use("/jobs", ensureLoggedIn, jobsRoutes);
 
 /** 404 handler */
 

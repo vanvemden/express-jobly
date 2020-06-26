@@ -2,11 +2,12 @@ const db = require('../db');
 const ExpressError = require('../helpers/expressError');
 const partialUpdate = require('../helpers/partialUpdate');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require('../config');
 
 /** Collection of related methods for user. */
 
 class User {
-
   constructor({ username, first_name, last_name, email, photo_url }) {
     this.username = username;
     this.first_name = first_name;
@@ -24,30 +25,46 @@ class User {
     first_name,
     last_name,
     email,
-    photo_url
+    photo_url,
   }) {
-
     try {
-
       // Generate a hashed password with bcrypt.
-      const hashedPwd = await bcrypt.hash(password, 12);
+      const hashedPwd = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
       const result = await db.query(
         `INSERT INTO users 
         (username, password, first_name, last_name, email, photo_url, is_admin)
         VALUES ($1, $2, $3, $4, $5, $6, $7) 
-        RETURNING username, first_name, last_name, email, photo_url`,
+        RETURNING username, is_admin`,
         [username, hashedPwd, first_name, last_name, email, photo_url, false]
       );
-      return new User(result.rows[0]);
+      return jwt.sign(result.rows[0], SECRET_KEY);
 
     } catch {
       throw new ExpressError('Username/Email is already in use.', 400);
     }
+  }
 
+  static async authenticate({ username, password }) {
+    const result = await db.query(
+      `SELECT password, is_admin
+      FROM users 
+      WHERE username=$1`,
+      [username]
+    );
+
+    let user = result.rows[0];
+    if (user) {
+      if (await bcrypt.compare(password, user.password) === true) {
+        let token = jwt.sign({ username, is_admin: user.is_admin }, SECRET_KEY);
+        return token;
+      }
+    }
+
+    throw new ExpressError('Invalid username/password', 400);
   }
 
   // Get all of the users
-  // Return an array of users [{User}, {User}, ...] 
+  // Return an array of users [{User}, {User}, ...]
   static async getAll() {
     const result = await db.query(
       `SELECT username, first_name, last_name, email, photo_url
@@ -79,8 +96,7 @@ class User {
     return new User(result.rows[0]);
   }
 
-
-  // Updates user 
+  // Updates user
   // Returns an updated User instance.
   static async update(username, items) {
     const { query, values } = partialUpdate(
