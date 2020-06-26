@@ -23,7 +23,6 @@ beforeAll(async () => {
     WHERE username='admin'`
   );
   _token = await User.authenticate({ username: "admin", password: "secret" });
-  console.log('token.........................', _token);
 });
 
 beforeEach(async () => {

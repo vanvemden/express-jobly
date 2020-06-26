@@ -82,18 +82,31 @@ class User {
   // Get a single user
   // Returns a User instance.
   static async getById(username) {
-    const result = await db.query(
+    const userResult = await db.query(
       `SELECT username, first_name, last_name, email, photo_url
       FROM users
-      WHERE LOWER(username)=$1`,
+      WHERE LOWER(username)=$1;`,
       [username.toLowerCase()]
     );
 
-    if (result.rows.length === 0) {
+    if (userResult.rows.length === 0) {
       throw new ExpressError(`${username} does not exist.`, 404);
     }
 
-    return new User(result.rows[0]);
+    const jobsResult = await db.query(
+      `SELECT j.title, j.salary, j.equity, j.date_posted, a.state, a.created_at
+      FROM jobs AS j
+      JOIN applications AS a
+      ON j.id = a.job_id
+      WHERE LOWER(a.username)=$1`,
+      [username.toLowerCase()]
+    );
+
+    let user = new User(userResult.rows[0]);
+
+    user.jobs = jobsResult.rows;
+
+    return user;
   }
 
   // Updates user

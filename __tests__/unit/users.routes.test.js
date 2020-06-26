@@ -83,53 +83,53 @@ describe('Testing POST requests', () => {
 
 });
 
-describe("Testing PATCH request", () => {
+// describe("Testing PATCH request", () => {
 
-  test('PATCH request to /users for updating existing user', async () => {
-    const resultPatch = await request(app).patch('/users/user2').send({
-      username: 'user10',
-      first_name: 'Marco',
-      last_name: 'Polo',
-      email: 'marco_polo@example.com',
-      photo_url: 'photo2.jpg'
-    });
+//   test('PATCH request to /users for updating existing user', async () => {
+//     const resultPatch = await request(app).patch('/users/user2').send({
+//       username: 'user10',
+//       first_name: 'Marco',
+//       last_name: 'Polo',
+//       email: 'marco_polo@example.com',
+//       photo_url: 'photo2.jpg'
+//     });
 
-    expect(resultPatch.statusCode).toBe(200);
-    expect(resultPatch.body.user.username).toBe('user10');
-    expect(resultPatch.body.user.last_name).toBe('Polo');
+//     expect(resultPatch.statusCode).toBe(200);
+//     expect(resultPatch.body.user.username).toBe('user10');
+//     expect(resultPatch.body.user.last_name).toBe('Polo');
 
-    const resultGet = await request(app).get('/users/user10');
-    expect(resultGet.statusCode).toBe(200);
-    expect(resultPatch.body.user.email).toBe('marco_polo@example.com');
-    expect(resultPatch.body.user.last_name).toBe('Polo');
-  });
+//     const resultGet = await request(app).get('/users/user10');
+//     expect(resultGet.statusCode).toBe(200);
+//     expect(resultPatch.body.user.email).toBe('marco_polo@example.com');
+//     expect(resultPatch.body.user.last_name).toBe('Polo');
+//   });
 
-  test('PATCH request to /users with invalid data', async () => {
-    const result = await request(app).patch('/users/anonymous').send({
-      username: 'anonymous',
-      first_name: 'Ano',
-      last_name: 'Nymous',
-      email: 'anonymous@example.com',
-      photo_url: 'photo102.jpg'
-    });
+//   test('PATCH request to /users with invalid data', async () => {
+//     const result = await request(app).patch('/users/anonymous').send({
+//       username: 'anonymous',
+//       first_name: 'Ano',
+//       last_name: 'Nymous',
+//       email: 'anonymous@example.com',
+//       photo_url: 'photo102.jpg'
+//     });
 
-    expect(result.statusCode).toBe(404);
-    expect(result.body.message.length).toBeGreaterThan(0);
-  });
+//     expect(result.statusCode).toBe(404);
+//     expect(result.body.message.length).toBeGreaterThan(0);
+//   });
 
-});
+// });
 
-describe("Testing DELETE request", () => {
+// describe("Testing DELETE request", () => {
 
-  test('DELETE request to existing user', async () => {
-    const resultDelete = await request(app).delete('/users/user1');
+//   test('DELETE request to existing user', async () => {
+//     const resultDelete = await request(app).delete('/users/user1');
 
-    expect(resultDelete.statusCode).toBe(200);
-    expect(resultDelete.body.message).toBe('User deleted');
+//     expect(resultDelete.statusCode).toBe(200);
+//     expect(resultDelete.body.message).toBe('User deleted');
 
-    const resultGet = await request(app).get('/users/user1');
+//     const resultGet = await request(app).get('/users/user1');
 
-    expect(resultGet.statusCode).toBe(404);
-  });
+//     expect(resultGet.statusCode).toBe(404);
+//   });
 
-});
+// });

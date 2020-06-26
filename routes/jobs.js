@@ -66,6 +66,32 @@ router.patch('/:id', ensureIsAdmin, async (req, res, next) => {
   }
 });
 
+// POST '/jobs/[id]/apply'
+// Insert state into applications table
+router.post('/:id/apply', async (req, res, next) => {
+  try {
+
+    const message = await Job.setState(req.params.id, req.user.username, req.body.state);
+    return res.json(message);
+
+  } catch (err) {
+    next(err);
+  }
+})
+
+// POST '/jobs/[id]/apply'
+// Insert state into applications table
+router.post('/:id/technology', async (req, res, next) => {
+  try {
+
+    const message = await Job.setTechnologies(req.params.id, req.body.technologies);
+    return res.json(message);
+
+  } catch (err) {
+    next(err);
+  }
+})
+
 // DELETE '/jobs/[id]'
 // Returns { message: "Job deleted" }
 router.delete('/:id', ensureIsAdmin, async (req, res, next) => {

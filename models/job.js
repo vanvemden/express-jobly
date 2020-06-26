@@ -69,18 +69,64 @@ class Job {
   }
 
   static async getById(id) {
-    const result = await db.query(
+    const resultJob = await db.query(
       `SELECT id, title, salary, equity, company_handle, date_posted
       FROM jobs
       WHERE id=$1`,
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if (resultJob.rows.length === 0) {
       throw new ExpressError(`No job found with id ${id}.`, 404);
     }
 
-    return new Job(result.rows[0]);
+    const resultTechnologies = await db.query(
+      `SELECT name
+    FROM jobs_technologies jt
+    JOIN technologies t
+    ON jt.technology_id = t.id
+    WHERE jt.job_id=$1`,
+      [id]
+    );
+
+    let job = new Job(resultJob.rows[0]);
+    job.technologies = resultTechnologies.rows;
+    return job;
+  }
+
+  static async setTechnologies(jobId, technologies) {
+    // technologies is an array with { id: .. , name: .. }
+    try {
+      await technologies.forEach(async (t) => {
+        await db.query(
+          `INSERT INTO jobs_technologies 
+          (job_id, technology_id)
+          VALUES
+          ($1, $2)`,
+          [jobId, t.id])
+      });
+      return { message: "Successfully added technologies." };
+    } catch {
+      throw new ExpressError(`Invalid combination for Job #${jobId} and technologies: ${technologies}.`, 400);
+    }
+  }
+
+  static async setState(jobId, username, state) {
+    try {
+      const result = await db.query(
+        `INSERT INTO applications
+        (job_id, username, state)
+        VALUES
+        ($1, $2, $3) 
+        RETURNING state;`,
+        [jobId, username, state]);
+
+      const message = result.rows[0];
+
+      return message;
+    } catch {
+      throw new ExpressError(`Error: Setting state failed for Job #${jobId}, User '${username}'.`, 400);
+    }
   }
 
   static async update(id, items) {
